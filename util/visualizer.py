@@ -5,7 +5,7 @@ import ntpath
 import time
 from . import util
 from . import html
-from PIL import Image
+from scipy.misc import imresize
 
 if sys.version_info[0] == 2:
     VisdomExceptionBase = Exception
@@ -28,9 +28,9 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256):
         save_path = os.path.join(image_dir, image_name)
         h, w, _ = im.shape
         if aspect_ratio > 1.0:
-            im = np.array(Image.fromarray().resize(im, (h, int(w * aspect_ratio)), interp='bicubic'))
+            im = imresize(im, (h, int(w * aspect_ratio)), interp='bicubic')
         if aspect_ratio < 1.0:
-            im = np.array(Image.fromarray().resize(im, (int(h / aspect_ratio), w), interp='bicubic'))
+            im = imresize(im, (int(h / aspect_ratio), w), interp='bicubic')
         util.save_image(im, save_path)
 
         ims.append(image_name)
@@ -50,7 +50,7 @@ class Visualizer():
         if self.display_id > 0:
             import visdom
             self.ncols = opt.display_ncols
-            
+            self.vis = visdom.Visdom(server=opt.display_server, port=opt.display_port, env=opt.display_env, raise_exceptions=True)
 
         if self.use_html:
             self.web_dir = os.path.join(opt.checkpoints_dir, opt.name, 'web')
@@ -140,23 +140,7 @@ class Visualizer():
             webpage.save()
 
     # losses: dictionary of error labels and values
-    def plot_current_losses(self, epoch, counter_ratio, opt, losses):
-        if not hasattr(self, 'plot_data'):
-            self.plot_data = {'X': [], 'Y': [], 'legend': list(losses.keys())}
-        self.plot_data['X'].append(epoch + counter_ratio)
-        self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
-        try:
-            self.vis.line(
-                X=np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1),
-                Y=np.array(self.plot_data['Y']),
-                opts={
-                    'title': self.name + ' loss over time',
-                    'legend': self.plot_data['legend'],
-                    'xlabel': 'epoch',
-                    'ylabel': 'loss'},
-                win=self.display_id)
-        except VisdomExceptionBase:
-            self.throw_visdom_connection_error()
+
 
     # losses: same format as |losses| of plot_current_losses
     def print_current_losses(self, epoch, i, losses, t, t_data):
