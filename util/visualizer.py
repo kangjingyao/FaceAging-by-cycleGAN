@@ -140,7 +140,7 @@ class Visualizer():
             webpage.save()
 
     # losses: dictionary of error labels and values
-   
+
 
     # losses: same format as |losses| of plot_current_losses
     def print_current_losses(self, epoch, i, losses, t, t_data):
